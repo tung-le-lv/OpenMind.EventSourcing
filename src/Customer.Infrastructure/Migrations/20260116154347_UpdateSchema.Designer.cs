@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Customer.Infrastructure.Migrations
 {
     [DbContext(typeof(CustomerReadDbContext))]
-    [Migration("20251121082219_AddOutbox")]
-    partial class RenameTable
+    [Migration("20260116154347_UpdateSchema")]
+    partial class UpdateSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

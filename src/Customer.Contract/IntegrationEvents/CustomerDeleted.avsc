@@ -1,0 +1,24 @@
+[
+  {
+    "name": "CustomerDeleted",
+    "doc": "Customer deleted event",
+    "namespace": "OpenMind.Customer.Integration.Events",
+    "type": "record",
+    "fields": [
+      {
+        "name": "Id",
+        "type": {
+          "type": "string",
+          "logicalType": "uuid"
+        }
+      },
+      {
+        "name": "DeletedAt",
+        "type": {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      }
+    ]
+  }
+]

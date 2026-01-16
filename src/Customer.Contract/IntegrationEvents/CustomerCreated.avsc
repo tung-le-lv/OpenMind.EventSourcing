@@ -1,0 +1,48 @@
+[
+  {
+    "name": "CustomerCreated",
+    "doc": "Customer created event",
+    "namespace": "OpenMind.Customer.Integration.Events",
+    "type": "record",
+    "fields": [
+      {
+        "name": "Id",
+        "type": {
+          "type": "string",
+          "logicalType": "uuid"
+        }
+      },
+      {
+        "name": "FirstName",
+        "type": "string"
+      },
+      {
+        "name": "LastName",
+        "type": "string"
+      },
+      {
+        "name": "PhoneNumber",
+        "type": "string"
+      },
+      {
+        "name": "Address",
+        "type": "string"
+      },
+      {
+        "name": "BillingAddress",
+        "type": "string"
+      },
+      {
+        "name": "Email",
+        "type": "string"
+      },
+      {
+        "name": "CreatedAt",
+        "type": {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      }
+    ]
+  }
+]

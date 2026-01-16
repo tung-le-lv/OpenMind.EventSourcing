@@ -1,10 +1,9 @@
 using Customer.Application.Commands;
 using Customer.Application.Dto;
+using Customer.Application.Query;
 using Customer.Domain.Aggregate;
 using EventFlow;
 using EventFlow.Queries;
-using OpenMind.Common.Authentication;
-using OpenMind.Common.CQRS.EventFlow;
 
 namespace Customer.API;
 
@@ -25,12 +24,10 @@ public static class CustomerEndpoints
 
                 return Results.Ok(customer);
             })
-            .WithName("GetCustomer")
-            .RequireAuthorization();
+            .WithName("GetCustomer");
 
-        app.MapPost("/customer", async (CreateCustomerRequest request, ICommandBus commandBus, HttpContext httpContext) =>
+        app.MapPost("/customer", async (CreateCustomerRequest request, ICommandBus commandBus) =>
             {
-                var createdBy = httpContext.User.GetUserId() ?? string.Empty;
                 var command = new CreateCustomerCommand(
                     CustomerId.NewComb(),
                     request.FirstName,
@@ -40,7 +37,7 @@ public static class CustomerEndpoints
                     request.Address,
                     request.BillingAddress,
                     request.DateOfBirth,
-                    createdBy);
+                    string.Empty);
 
                 var result = await commandBus.PublishAsync(command, CancellationToken.None);
 
@@ -51,13 +48,11 @@ public static class CustomerEndpoints
                     _ => Results.InternalServerError("Unknown error.")
                 };
             })
-            .WithName("CreateCustomer")
-            .RequireAuthorization();
+            .WithName("CreateCustomer");
         
-        app.MapDelete("/customer/{id:guid}", async (Guid id, ICommandBus commandBus, HttpContext httpContext) =>
+        app.MapDelete("/customer/{id:guid}", async (Guid id, ICommandBus commandBus) =>
             {
-                var deletedBy = httpContext.User.GetUserId() ?? string.Empty;
-                var command = new DeleteCustomerCommand(CustomerId.With(id), deletedBy);
+                var command = new DeleteCustomerCommand(CustomerId.With(id), string.Empty);
                 var result = await commandBus.PublishAsync(command, CancellationToken.None);
 
                 return result switch
@@ -67,8 +62,7 @@ public static class CustomerEndpoints
                     _ => Results.InternalServerError("Unknown error.")
                 };
             })
-            .WithName("DeleteCustomer")
-            .RequireAuthorization();
+            .WithName("DeleteCustomer");
 
         app.MapPost("/customer/{id:guid}/email",
                 async (Guid id, UpdateCustomerEmailRequest request, ICommandBus commandBus) =>
@@ -85,14 +79,12 @@ public static class CustomerEndpoints
                     return result switch
                     {
                         ChangeEmailResult.CustomerNotFound => Results.NotFound("Customer not found."),
-                        ChangeEmailResult.NewEmailMustBeDifferentFromTheCurrent => Results.UnprocessableEntity(
-                            "New email must be different from the current email."),
+                        ChangeEmailResult.NewEmailMustBeDifferentFromTheCurrent => Results.UnprocessableEntity("New email must be different from the current email."),
                         ChangeEmailResult.Success => Results.Ok(),
                         _ => Results.InternalServerError("Unknown error.")
                     };
                 })
-            .WithName("UpdateCustomerEmail")
-            .RequireAuthorization();
+            .WithName("UpdateCustomerEmail");
     }
 }
 

@@ -31,16 +31,6 @@ public static class EventFlowExtensions
                 .UseEntityFrameworkReadModel<CustomerReadModel, CustomerReadDbContext>()
                 .Configure(c => c.ThrowSubscriberExceptions = true)
                 .AddDefaults(typeof(CustomerAggregate).Assembly)
-                .RegisterServices(r =>
-                {
-                    // r.Register<IOptimisticConcurrencyRetryStrategy>(context => new EventFlowOptimisticConcurrencyRetryStrategy());
-                    // r.DecorateCommandBusWithTenantIsolation();
-                    // r.DecorateCommandBusWithLogContext();
-                    // r.DecorateCommandBusWithValidation(options =>
-                    //     options.RegisterCommandValidatorsFrom(typeof(Program).Assembly, typeof(Domain.Bootstrapper).Assembly));
-                })
-            // .AddMetadataProvider<AddTenantIdMetadataProvider>()
-            // .AddAggregateJobEvents<QuoteAggregate, QuoteId>()
         );
     }
 }

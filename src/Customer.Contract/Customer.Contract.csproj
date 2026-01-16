@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Apache.Avro" Version="1.12.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <AvroSchemaFiles Include="IntegrationEvents\*.avsc" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="IntegrationEvents\*.avsc">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <Target Name="GenerateAvroClasses" BeforeTargets="CoreCompile" Inputs="@(AvroSchemaFiles)" Outputs="$(IntermediateOutputPath)avro-generated.marker">
+        <Exec Command="dotnet tool restore" />
+        <Exec Command="dotnet avrogen -s %(AvroSchemaFiles.FullPath) $(ProjectDir)IntegrationEvents" />
+        <Touch Files="$(IntermediateOutputPath)avro-generated.marker" AlwaysCreate="true" />
+    </Target>
+
+</Project>

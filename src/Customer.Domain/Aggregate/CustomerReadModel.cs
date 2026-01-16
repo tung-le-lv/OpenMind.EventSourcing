@@ -54,7 +54,9 @@ public class CustomerReadModel :
         Email = @event.Email;
         Address = @event.Address;
         BillingAddress = @event.BillingAddress;
-        DateOfBirth = @event.DateOfBirth;
+        DateOfBirth = @event.DateOfBirth.HasValue 
+            ? DateTime.SpecifyKind(@event.DateOfBirth.Value, DateTimeKind.Utc) 
+            : null;
         CreatedAt = @event.CreatedAt;
         ActionUserId = @event.CreatedBy;
 

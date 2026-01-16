@@ -3,26 +3,28 @@ using Customer.Domain.Event;
 using Customer.Infrastructure;
 using EventFlow.Aggregates;
 using EventFlow.Subscribers;
-using KafkaFlow;
+using KafkaFlow.Producers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OpenMind.Customer.Integration.Events;
-using OpenMind.Kafka.Producers;
 
 namespace Customer.Application.DomainEventsSubscriber;
 
 // EventFlow event handler isn't transactional consistent with read or write model context.
 public class CustomerDomainEventHandler(
     CustomerReadDbContext dbContext,
-    IMessageProducer<IOutboxEventsProducer> outboxPublisher,
+    IProducerAccessor producerAccessor,
     ILogger<CustomerDomainEventHandler> logger) 
     : ISubscribeSynchronousTo<CustomerAggregate, CustomerId, CustomerCreatedEvent>, ISubscribeSynchronousTo<CustomerAggregate, CustomerId, CustomerDeletedEvent>
 {
+    private const string ProducerName = "customer-events";
+    
     public async Task HandleAsync(IDomainEvent<CustomerAggregate, CustomerId, CustomerCreatedEvent> @event, CancellationToken cancellationToken)
     {
         var customerId = @event.AggregateIdentity.Value;
+        var producer = producerAccessor.GetProducer(ProducerName);
 
-        await outboxPublisher.ProduceAsync(customerId, new
+        await producer.ProduceAsync(customerId, new
             CustomerCreated
             {
                 Id = @event.AggregateIdentity.GetGuid(),
@@ -44,7 +46,9 @@ public class CustomerDomainEventHandler(
         
         await RemoveCustomerReadModelAsync(customerId, cancellationToken);
 
-        await outboxPublisher.ProduceAsync(customerId, new
+        var producer = producerAccessor.GetProducer(ProducerName);
+        
+        await producer.ProduceAsync(customerId, new
             CustomerDeleted
             {
                 Id = @event.AggregateIdentity.GetGuid(),

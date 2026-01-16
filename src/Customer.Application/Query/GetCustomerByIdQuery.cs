@@ -5,7 +5,6 @@ using Customer.Infrastructure;
 using EventFlow.EntityFramework;
 using EventFlow.Queries;
 using Microsoft.EntityFrameworkCore;
-using OpenMind.Common.CQRS.EventFlow;
 
 namespace Customer.Application.Query;
 
