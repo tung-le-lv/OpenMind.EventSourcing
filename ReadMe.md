@@ -1,48 +1,128 @@
-### EF migration
-Connection string for migration is hardcoded in class CustomerReadDbContextFactory.
-```powershell
-cd Customer/Customer.Infrastructure
-dotnet ef database update
+## Overview
+
+A sample application demonstrating the **Event Sourcing** pattern using the [EventFlow](https://github.com/eventflow/EventFlow).
+
+## Resources
+
+- [EventFlow Documentation](https://eventflow.net/)
+- [Event Sourcing Pattern - Microsoft](https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing)
+- [CQRS Pattern - Martin Fowler](https://martinfowler.com/bliki/CQRS.html)
+
+## What is Event Sourcing?
+
+Event Sourcing is an architectural pattern where the state of an application is determined by a sequence of events rather than just storing the current state. Instead of updating a record in place, every change is captured as an immutable event and appended to an event store.
+
+### Traditional CRUD vs Event Sourcing
+
+| Traditional CRUD | Event Sourcing |
+|------------------|----------------|
+| Store current state only | Store all events that led to current state |
+| Update/Delete overwrites data | Events are immutable, append-only |
+| No history by default | Complete audit trail built-in |
+| Single source of truth | Events are the source of truth |
+
+### Key Benefits
+
+- **Complete Audit Trail**: Every change is recorded as an event, providing full traceability
+- **Temporal Queries**: Reconstruct the state at any point in time
+- **Event-Driven Architecture**: Natural fit for microservices and CQRS
+- **Debugging**: Replay events to understand how the system reached its current state
+
+## EventFlow Library
+
+[EventFlow](https://github.com/eventflow/EventFlow) is a popular .NET library for building event-sourced applications. It provides:
+
+- **Aggregates**: Domain objects that encapsulate business logic and emit events
+- **Commands & Command Handlers**: Encapsulate user intentions and execute business logic
+- **Events**: Immutable records of state changes
+- **Read Models**: Optimized projections for querying
+- **Event Store**: Pluggable storage (PostgreSQL, SQL Server, EventStore, etc.)
+
+### How It Works in This Project
+
 ```
-Add migration:
-```powershell
- dotnet ef migrations add MigrationName
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│   Command   │────▶│  Aggregate   │────▶│  Domain Event   │
+│ (Intent)    │     │ (Business    │     │ (State Change)  │
+└─────────────┘     │  Logic)      │     └────────┬────────┘
+                    └──────────────┘              │
+                                                  ▼
+                    ┌──────────────┐     ┌─────────────────┐
+                    │  Read Model  │◀────│  Event Store    │
+                    │ (Query View) │     │ (PostgreSQL)    │
+                    └──────────────┘     └────────┬────────┘
+                                                  │
+                                                  ▼
+                                         ┌─────────────────┐
+                                         │     Kafka       │
+                                         │ (Integration)   │
+                                         └─────────────────┘
 ```
 
-### Outbox messaging
-Manually run following sql scripts for Outbox table
-https://github.com/AlexeyRaga/kafkaflow-contrib/tree/main/src/Contrib.KafkaFlow.Outbox.Postgres/schema 
+### Example Flow: Creating a Customer
 
-```sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+1. **Command**: `CreateCustomerCommand` is sent with customer details
+2. **Aggregate**: `CustomerAggregate` validates and emits `CustomerCreatedEvent`
+3. **Event Store**: Event is persisted to PostgreSQL
+4. **Read Model**: `CustomerReadModel` is updated for fast queries
+5. **Integration**: Event is published to Kafka for other services
 
-DO
-$do$
-BEGIN
-    IF
-NOT EXISTS (
-            SELECT schema_name
-            FROM information_schema.schemata
-            WHERE schema_name = 'outbox'
-        ) THEN
-            EXECUTE ('CREATE SCHEMA "outbox"');
-END IF;
-END
-$do$;
+## Project Structure
 
-CREATE TABLE "outbox"."outbox"
-(
-    sequence_id     SERIAL       NOT NULL,
-    topic_name      VARCHAR(255) NOT NULL,
-    partition       INT NULL,
-    message_key     BYTEA NULL,
-    message_headers TEXT NULL,
-    message_body    BYTEA NULL,
-    date_added_utc  TIMESTAMP WITHOUT TIME ZONE NOT NULL CONSTRAINT df_Outbox_Outbox_date_added_utc DEFAULT (now() AT TIME ZONE 'utc'),
-    CONSTRAINT pk_Outbox_Outbox PRIMARY KEY (sequence_id),
-    CONSTRAINT ck_Outbox_Outbox_Headers_Not_Blank_Or_Empty CHECK (TRIM(message_headers) <> ''),
-    CONSTRAINT ck_Outbox_Outbox_topic_name_not_blank_or_empty CHECK (TRIM(topic_name) <> '')
-);
-
-ALTER TABLE "outbox"."outbox" ALTER COLUMN "sequence_id" TYPE BIGINT;
 ```
+src/
+├── Customer.API/           # REST API endpoints
+├── Customer.Application/   # Commands, Queries, Event Handlers
+├── Customer.Domain/        # Aggregates, Events, Read Models
+├── Customer.Infrastructure/# Database context, Migrations
+└── Customer.Contract/      # Avro schemas for Kafka events
+```
+
+## Tech Stack
+
+- **.NET 9** - Runtime
+- **EventFlow** - Event Sourcing framework
+- **PostgreSQL** - Event Store & Read Model database
+- **KafkaFlow** - Kafka client for event publishing
+- **Redpanda** - Kafka-compatible streaming platform
+
+## Getting Started
+
+### Prerequisites
+
+- .NET 9 SDK
+- Docker & Docker Compose
+
+### Run Infrastructure
+
+```bash
+docker compose --profile infra up -d
+```
+
+This starts:
+- **Redpanda** (Kafka) on port 9092
+- **PostgreSQL** on port 5433
+- **Redpanda Console** on port 8080
+
+### Apply Database Migrations
+
+```bash
+cd src/Customer.API
+dotnet ef database update --project ../Customer.Infrastructure
+```
+
+### Run the API
+
+```bash
+cd src/Customer.API
+dotnet run
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/customer` | Create a new customer |
+| GET | `/customer/{id}` | Get customer by ID |
+| POST | `/customer/{id}/email` | Update customer email |
+| DELETE | `/customer/{id}` | Delete a customer |
