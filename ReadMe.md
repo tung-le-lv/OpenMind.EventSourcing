@@ -1,32 +1,40 @@
-## Overview
-
-A sample application demonstrating the **Event Sourcing** pattern using the [EventFlow](https://github.com/eventflow/EventFlow).
-
-## Resources
-
-- [EventFlow Documentation](https://eventflow.net/)
-- [Event Sourcing Pattern - Microsoft](https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing)
-- [CQRS Pattern - Martin Fowler](https://martinfowler.com/bliki/CQRS.html)
-
-## What is Event Sourcing?
+## Event Sourcing
 
 Event Sourcing is an architectural pattern where the state of an application is determined by a sequence of events rather than just storing the current state. Instead of updating a record in place, every change is captured as an immutable event and appended to an event store.
 
-### Traditional CRUD vs Event Sourcing
+### CONTEXT AND PROLEM
+- The traditional approach to persistence:
+- Maps classes to database tables.
+- Fields of those classes to table columns.
+- Instances of those classes to rows in those tables.
 
-| Traditional CRUD | Event Sourcing |
-|------------------|----------------|
-| Store current state only | Store all events that led to current state |
-| Update/Delete overwrites data | Events are immutable, append-only |
-| No history by default | Complete audit trail built-in |
-| Single source of truth | Events are the source of truth |
+### THE TROUBLE WITH TRADITIONAL PERSISTENCE
+- Object-Relational impedance mismatch.
+- Lack of aggregate history.
+- Implementing audit logging.
+- Lack of event publishing.
 
-### Key Benefits
+### EVENT SOURCING PATTERN
+- When an application creates or updates an aggregate, it inserts the events emitted
+by the aggregate into the EVENTS table.
+- An application loads an aggregate from the event store by retrieving its events and
+replaying them to build its latest state.
+- Loading an aggregate consists of the following three steps:
+- Load the events for the aggregate.
+- Create an aggregate instance by using its default constructor.
+- Iterate through the events, calling apply().
 
-- **Complete Audit Trail**: Every change is recorded as an event, providing full traceability
-- **Temporal Queries**: Reconstruct the state at any point in time
-- **Event-Driven Architecture**: Natural fit for microservices and CQRS
-- **Debugging**: Replay events to understand how the system reached its current state
+### EVENT SOURCING CHALLENGES
+- Handling concurrent updates.
+- Performance.
+- Idempotent message processing.
+- Evolving domain events.
+
+### BENEFITS OF EVENT SOURCING
+- Reliably publishes domain events.
+- Preserves the history of aggregates.
+- Mostly avoids the O/R impedance mismatch problem.
+- Provides developers with a time machine.
 
 ## EventFlow Library
 
@@ -37,6 +45,12 @@ Event Sourcing is an architectural pattern where the state of an application is 
 - **Events**: Immutable records of state changes
 - **Read Models**: Optimized projections for querying
 - **Event Store**: Pluggable storage (PostgreSQL, SQL Server, EventStore, etc.)
+
+## References
+
+- [EventFlow Documentation](https://eventflow.net/)
+- [Event Sourcing Pattern - Microsoft](https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing)
+- [CQRS Pattern - Martin Fowler](https://martinfowler.com/bliki/CQRS.html)
 
 ### How It Works in This Project
 
@@ -66,25 +80,6 @@ Event Sourcing is an architectural pattern where the state of an application is 
 3. **Event Store**: Event is persisted to PostgreSQL
 4. **Read Model**: `CustomerReadModel` is updated for fast queries
 5. **Integration**: Event is published to Kafka for other services
-
-## Project Structure
-
-```
-src/
-├── Customer.API/           # REST API endpoints
-├── Customer.Application/   # Commands, Queries, Event Handlers
-├── Customer.Domain/        # Aggregates, Events, Read Models
-├── Customer.Infrastructure/# Database context, Migrations
-└── Customer.Contract/      # Avro schemas for Kafka events
-```
-
-## Tech Stack
-
-- **.NET 9** - Runtime
-- **EventFlow** - Event Sourcing framework
-- **PostgreSQL** - Event Store & Read Model database
-- **KafkaFlow** - Kafka client for event publishing
-- **Redpanda** - Kafka-compatible streaming platform
 
 ## Getting Started
 
